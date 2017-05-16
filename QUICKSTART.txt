@@ -1,0 +1,52 @@
+First off, this program needs good quality audio to work with, so use it 
+with a worn microphone preferably. When using it with the 'Google AIY' kit,
+try staying close to the microphone and ensure there isn't too much background
+noise for best results.
+
+1) type 'make' to compile the program.
+2) type './vk' to run it.
+3) say a few letter... 'a', 'b' etc... the program should say something like:
+
+BEST=0  or ?, distance=9999999827968, size=20
+
+this is because at this point it doesn't know any letters. 
+say 'a', then after the BEST= line appears, type 'a' on the keyboard. 
+It will say something like:
+
+*** TRAINED 1 or 'a' size=26
+
+This adds your 'a' sound into the codebook. (a file called cb.txt)
+Now when you say 'a' again it should say:
+
+BEST=0  or a, distance=491903, size=24
+
+Now say 'b'. The program should recognize it as an 'a' since this is the only
+sound it knows so far.  Add your 'b' sound by typing 'b' on the keyboard.
+
+At this stage you should have a recognizer that can distinguish between 'a' and 'b' being spoken.
+Now go through the rest of the alphabet adding an example of each letter in
+by typing it after you have said it.
+
+Now you will have a recognizer that should be able to distinguish
+between spoken letters with around 50-75% accuracy.
+
+The next stage is to improve the accuracy.
+Do this 'correcting' the mistakes it makes by typing the correct letter.
+This adds more examples of 'difficult' letters and improves
+the accuracy by accounting for subtle variations in pronounciation.
+
+At any time, you can press the 'Escape' key to quit and get a rough
+estimate of the perceived accuracy (basically the number of letters picked up 
+verses the amount of new examples added.)
+
+Mistakes in training can be fixed by manually editing the 'cb.txt' file. 
+The format of this is a letter, then the number of frames that make it up 
+(usually around 25), and that many lines of frequency levels. 
+For example, you could delete a training mistake by exiting the program and
+removing the last chunk of lines if necessary.
+
+Finally, I'd recommend against spending too much time training the program. 
+It is essentially a very short and simple 'toy' recognizer,
+it is always going to be less than perfect,
+but certainly accuracy of 95% or above should be possible.
+(especially when used with a high quality worn headset in a quiet setting)

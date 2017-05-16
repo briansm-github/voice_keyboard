@@ -1,0 +1,9 @@
+No audio being acknowledged -  try making the 'TOL' value in the source code
+a bit lower, e.g 1.3 or 1.2
+
+Microphone too sensitive to background noise - try makeing the 'TOL' value 
+in the source code a bit higher e.g 2.0 or 2.5
+
+Too many valid samples rejected as too long or too short - try modifying
+the 'MINSIZE' or 'MAXSIZE' settings in the source to accomodate shorter
+or longer valid samples.

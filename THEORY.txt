@@ -1,0 +1,91 @@
+THEORY OF OPERATION AND GENERAL RAMBLING (a brain-dump)
+-------------------------------------------------------
+
+This is a lightweight word recognizer. (under 400 lines of C)
+It forgoes more traditional feature choices (MFCC, PLP, filterbanks)
+in preference for a frequency domain analysis of a 10th order
+linear prediction filter (LPC10), which I've had good results with
+in my own experiments.  It is probsbly a sort-of 'bubble sort' of 
+speech recognition - quick and relativey easy to understand, but better
+results can be gained with a more sophisticated approach.
+
+LPC10 is a very old, time-tested algorithm for speech processing.
+and speech compression.  It has been around since the 1970's
+(the 'Speak and Spell' from 1978 uses it to store its voice samples), so
+it is very fast and lightweight on moden hardware.
+
+It is used in voice coding software like FS1015 (1984), MELP (1990's),
+Speex and FLAC (2000's) and even state-of-the-art codecs like TWELP (2010's).
+It is also part of the GSM standard used by billions of mobile phones. 
+
+
+Here, it works by providing an approximation of a time-domain sample from 11
+'autocorrelation' vectors calculated on  a 35ms Hann-windowed section
+of 4Khz speech every 10ms.This is in effect an estimate of the 'envelope' of
+the speech, with things like pitch, volume/energy and timbre stripped out,
+mostly only leaving the 'formant' information required to distinguish phonemes.
+This makes it ideal for speech recognition as it 'homogenizes' speech,
+in effect boosing the SNR going into the feature analysis phase.
+
+(speech codecs then attenpt to recreate this 'residue' of pitch/energy/timbre
+information in various ways in their synthesis stages. FLAC reproduces it
+exactly, Speex/CELP approximates it with a codebook and OpenLPC with a
+basic sawtooth/white noise excitation)
+
+The LPC filter however remains a time-domain representation, so we run it
+though a 32/17 fast-fourier transform (FFT) to get a frequency-domain 
+version (in effect 17 harmonics, similar to a monotone female voice).
+This is similar to how the Codec2 synthesiser works.
+
+The log of the energy of each of the 17 bins is taken and bounds set on the
+levels of these bins (a flat -1.0 -> 2.0 range is used) to avoid biasing 
+the classifier with any excessive spikes or troughs. The
+bounding model is a reasonable first approximation but should really be
+more complex to take into account the spectral tilt present.
+
+a 0.9375 (15/16) pre-emphasis filter is applied to the incoming speech before
+any processing is done. This helps remove  most of the spetral tilt naturally
+present in the speech and moves the focus of the LPC filter away from the
+bass towards the midrange, more accurately capturing the formants. This is the
+only pre-filtering done. Lower pre-emphasis would perhaps be better but this
+would demand a more detailed bounding/weighting model for the bins.
+
+The weakness of using LPC10 as the front-end analysis stage is than it can be
+sensitive to background noise. Often some noise-reduction pre-processing is
+done prior to LPC10 filtering to aleviate this. (e.g. Speex provides a good
+background noise reduction pre-processor). Modern DSP's and multi-microphone
+setups should help provide good incoming audio with the high SNR required.
+
+The log-power of the 0'th autocorrelation (the signal correlated to itself
+delayed by 0 samples) is used as a measure of the overall energy/volume of the
+sample for voice-activity detection (VAD). A meaure of the 'lowest' ambient
+energy is tracked, and voice signal acknowledged when the energy rises 2dB
+above this level.  (yea, I know it's not dB exactly, cut me some slack.)
+If the length os the utterance is between 10 and 50 frames (100-500ms) it is
+accepted and passed onto the recognizer/trainer phase.
+
+The chunk of frames (utterance) is Euclidean-distance matched to
+previously stored utternaces and the best match (shortest distance) is reported.
+If a keypress is detected, the current utterance is
+added to the utternace codebook.
+No dynamic time warping is attempted since the utterances are so short. The
+classifier relies solely on having enough 'versions' of each speech sound to 
+accurately match new  samples with the existing stored ones.
+
+The algorithm could also be uaed as a lightweight 'hot word' recognizer by
+setting a 'minimum distance' permissable for matches in the codebook. Other
+improvements would be swithcing the windowing and autororrelation functions to
+be fixed-point for extra resolution/speed (Levinson Durbin and FFT
+are widely available as fixed-point implementations also). Dropping the 
+audio resolution from 16-bit to 12-bit would prevent 32-bit overflows in 
+autocorrelation calculations without significant loss in accuracy.
+
+Interestingly, with heavy (1.0) pre-emphasis, an 8th order LPC filter seems to
+be sufficient to allow for an accurate transcription of reconstructed speech,
+and with toll-quality signal (3400Hz), ignoring frequencies above the top
+formant, even a 6th order filter is accepible with female/child voices
+(vtln or undersampling could theoretically be used for male voices). Lower order
+filters naturally have lower entropy and can be quantized into managable
+solution spaces, typically below 16 bits, for potential frame-level analysis.
+
+Enjoy.
